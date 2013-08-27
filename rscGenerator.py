@@ -50,6 +50,7 @@ def printHeader():
     print ''
 
 def printUsage():
+    printHeader()
     print 'Usage:'
     print '\trscGenerator.py [options] [folder]...'
     print ''
@@ -60,11 +61,11 @@ def printUsage():
     print '  -o\t--output=FILE\tWrite the rsCollection into FILE.'
     print '\t\t\tIf not given, it will write into ./generated.rscollection' 
     print '  -s\t--stdout\tPrint the XML-Tree to stdout. It overrides -o, so no file will be created.'
+    print '\t\t\tIt also prevents any output except the XML-Tree.'
     print '  -v\t--verbose\tShow what the Script is doing'
     exit()
 
 def main():
-    printHeader()
     if len(sys.argv) <= 1:
         printUsage()
     
@@ -72,9 +73,10 @@ def main():
     output  = 'generated.rsCollection'
     exclude = []    
     stdout  = False
+    quiet   = False
 
-    argletters = 'hve:o:s'
-    argwords   = ['help', 'exclude=', 'output=', 'verbose', 'stdout']
+    argletters = 'hve:o:sq'
+    argwords   = ['help', 'exclude=', 'output=', 'verbose', 'stdout', 'quiet']
     triggers, targets = getopt.getopt(sys.argv[1:], argletters, argwords) 
     if len(targets) is 0:
         printUsage()
@@ -90,6 +92,13 @@ def main():
             verbose = True
         elif trigger in ['-s', '--stdout']:
             stdout = True
+            quiet  = True
+            
+    if quiet:
+        verbose = False
+
+    if not quiet:
+        printHeader()
 
     root = xml.XML('<!DOCTYPE RsCollection><RsCollection />')
     for target in targets:
