@@ -29,7 +29,7 @@ def addFolder(parentNode, path, verbose, exclude):
             if os.path.isdir(os.path.join(path, entry)):
                 child = xml.Element('Directory', name=entry)
                 parentNode.append(child)
-                addFolder(child, os.path.join(path, entry), verbose)
+                addFolder(child, os.path.join(path, entry), verbose, exclude)
             else:
                 addFile(parentNode, path, entry, verbose)
 
