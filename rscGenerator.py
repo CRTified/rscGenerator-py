@@ -26,9 +26,10 @@ import re
 # function to calculate the sha1 of a file
 def hashfile(filepath):
     sha1 = hashlib.sha1()
-    f = open(filepath, 'rb')
-    try:
-        sha1.update(f.read())
+    f = open(filepath, 'r')
+    try:    
+        for chunk in iter(lambda: f.read(160), b''): # Read blockwise to avoid python's MemoryError
+            sha1.update(chunk)
     finally:
         f.close()
     return sha1.hexdigest()
@@ -133,7 +134,11 @@ def main():
     # Create XML-tree
     root = xml.XML('<!DOCTYPE RsCollection><RsCollection />')
     for target in targets:
-        addFolder(root, target, verbose, exclude)
+        if os.path.isdir(target):
+            addFolder(root, target, verbose, exclude)
+        else:
+            path, name = os.path.split(target)
+            addFile(root, path, name, verbose)
     
     # Make it an ElementTree
     tree = xml.ElementTree(root)
