@@ -42,28 +42,33 @@ def isMatching(expressions, target):
     return False
 
 # recursive function to walk the folder and add the content to the xml-tree
-def addFolder(parentNode, path, verbose, exclude):
+def addFolder(parentNode, path, verbose, link, exclude):
     if verbose:
         print '[READ ] Directory\t' + path
     for entry in os.listdir(path):
         if not isMatching(exclude, entry): # Check for a match with one of the exclude-regEx
             if os.path.isdir(os.path.join(path, entry)):
-                child = xml.Element('Directory', name=entry)
-                parentNode.append(child)
-                addFolder(child, os.path.join(path, entry), verbose, exclude) # recursive call
+                child = parentNode
+                if not link:
+                    child = xml.Element('Directory', name=entry)
+                    parentNode.append(child)
+                addFolder(child, os.path.join(path, entry), verbose, link, exclude) # recursive call
             else:
-                addFile(parentNode, path, entry, verbose) # Add file
+                addFile(parentNode, path, entry, verbose, link) # Add file
 
 # function to add a file to the tree
-def addFile(parentNode, path, name, verbose): 
+def addFile(parentNode, path, name, verbose, link): 
     file = os.path.join(path, name)
     if verbose:
         print '[READ ] File\t\t' + file
-    child = xml.Element('File')
-    child.set('name', name)
-    child.set('sha1', hashfile(file))
-    child.set('size', str(os.path.getsize(file)))
-    parentNode.append(child)
+    if not link:
+        child = xml.Element('File')
+        child.set('name', name)
+        child.set('sha1', hashfile(file))
+        child.set('size', str(os.path.getsize(file)))
+        parentNode.append(child)
+    else:
+        print 'retroshare://file?name=' + name + '&size=' + str(os.path.getsize(file)) + '&hash=' + hashfile(file)
 
 # function to print the header with basic informations about this script
 def printHeader():
@@ -83,9 +88,10 @@ def printUsage():
     print '\trscGenerator.py [options] [folder]...'
     print ''
     print 'Options:'
-    print '  -h\t--help\t\tShow this screen'
     print '  -e\t--exclude=REGEX\tExcludes files and folders matching the REGEX'
     print '\t\t\t(By matching the name, not the full path)'
+    print '  -h\t--help\t\tShow this screen'
+    print '  -l\t--link\t\tPrints retroshare://-links to copy and paste'
     print '  -o\t--output=FILE\tWrite the rsCollection into FILE.'
     print '\t\t\tIf not given, it will write into ./generated.rscollection' 
     print '  -s\t--stdout\tPrint the XML-Tree to stdout. It overrides -o, so no file will be created.'
@@ -104,10 +110,11 @@ def main():
     exclude = []    
     stdout  = False
     quiet   = False
+    link    = False
     
     # Care for the arguments
-    argletters = 'hve:o:sq'
-    argwords   = ['help', 'exclude=', 'output=', 'verbose', 'stdout', 'quiet']
+    argletters = 'hve:o:sql'
+    argwords   = ['help', 'exclude=', 'output=', 'verbose', 'stdout', 'quiet', 'link']
     triggers, targets = getopt.getopt(sys.argv[1:], argletters, argwords) 
     if len(targets) is 0:
         printUsage()
@@ -124,7 +131,10 @@ def main():
         elif trigger in ['-s', '--stdout']:
             stdout = True
             quiet  = True
-            
+        elif trigger in ['-l', '--link']:
+            quiet = True
+            link = True
+    
     if quiet:
         verbose = False
     
@@ -135,10 +145,10 @@ def main():
     root = xml.XML('<!DOCTYPE RsCollection><RsCollection />')
     for target in targets:
         if os.path.isdir(target):
-            addFolder(root, target, verbose, exclude)
+            addFolder(root, target, verbose, link, exclude)
         else:
             path, name = os.path.split(target)
-            addFile(root, path, name, verbose)
+            addFile(root, path, name, verbose, link)
     
     # Make it an ElementTree
     tree = xml.ElementTree(root)
