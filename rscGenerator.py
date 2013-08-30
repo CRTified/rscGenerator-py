@@ -86,7 +86,7 @@ def xml_startScan(parentNode, target):
     if os.path.isdir(target):
         xml_addFolder(parentNode, target)
     else:
-        foldername = os.path.basename(os.path.normpath(os.path.dirname(target)))
+        foldername = unicode(os.path.basename(os.path.normpath(os.path.dirname(target))), encoding='utf-8')
         foldernode = xml.Element('Directory', name=foldername)
         parentNode.append(foldernode)
 
@@ -94,7 +94,7 @@ def xml_startScan(parentNode, target):
 
 # recursive function to walk the folder and add the content to the xml-tree
 def xml_addFolder(parentNode, path):
-    foldername = os.path.basename(os.path.normpath(path))
+    foldername = unicode(os.path.basename(os.path.normpath(path)), encoding='utf-8')
 
     verboseprint('READ', 'Directory\t' + foldername)
 
@@ -119,7 +119,7 @@ def xml_addFile(parentNode, file):
     size = str(os.path.getsize(file))
 
     childNode = xml.Element('File')
-    childNode.set('name', name)
+    childNode.set('name', unicode(name, encoding='utf-8'))
     childNode.set('sha1', sha1)
     childNode.set('size', size)
     parentNode.append(childNode)
@@ -232,6 +232,8 @@ def main():
             xml_writeToStdout(root)
         else:
             xml_writeToFile(root, settings.output)
+            print ''
             link_addFile(settings.output)
+            print ''
 
 main()
