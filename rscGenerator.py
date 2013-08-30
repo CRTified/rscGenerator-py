@@ -10,9 +10,9 @@
 # as the name is changed.
 #
 #            DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
-#   TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
-#   
-#  0. You just DO WHAT THE FUCK YOU WANT TO.
+#     TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
+#     
+#    0. You just DO WHAT THE FUCK YOU WANT TO.
 #
 
 # imports
@@ -22,9 +22,11 @@ import getopt
 import hashlib
 import lxml.etree as xml
 import re
+import settings
 
 # function to calculate the sha1 of a file
 def hashfile(filepath):
+    verboseprint('CALC', 'Hash of ' + filepath)
     sha1 = hashlib.sha1()
     f = open(filepath, 'r')
     try:    
@@ -41,34 +43,99 @@ def isMatching(expressions, target):
             return True
     return False
 
-# recursive function to walk the folder and add the content to the xml-tree
-def addFolder(parentNode, path, verbose, link, exclude):
-    if verbose:
-        print '[READ ] Directory\t' + path
+#####################################################################################
+## Link generation
+#####################################################################################
+
+# Function to start the scan for generating the links
+def link_startScan(target):
+    if os.path.isdir(target):
+        link_addFolder(target)
+    else:
+        link_addFile(target)
+
+# recursive function to walk the folder and print the files' links
+def link_addFolder(path):
     for entry in os.listdir(path):
-        if not isMatching(exclude, entry): # Check for a match with one of the exclude-regEx
-            if os.path.isdir(os.path.join(path, entry)):
-                child = parentNode
-                if not link:
-                    child = xml.Element('Directory', name=entry)
-                    parentNode.append(child)
-                addFolder(child, os.path.join(path, entry), verbose, link, exclude) # recursive call
+        if not isMatching(settings.exclude, entry): # Check for a match with one of the exclude-regEx
+            entrypath = os.path.join(path, entry) # Build the entry's path
+
+            if os.path.isdir(entrypath):
+                link_addFolder(entrypath) # recursive call
             else:
-                addFile(parentNode, path, entry, verbose, link) # Add file
+                link_addFile(entrypath) # Print the file's link
+
+# function to print a file's link
+def link_addFile(file):
+
+    path, name = os.path.split(file)
+    sha1 = hashfile(file)
+    size = str(os.path.getsize(file))
+
+    print 'retroshare://file?name=' + name + '&size=' + size + '&hash=' + sha1
+
+
+#####################################################################################
+## XML generation
+#####################################################################################
+
+# Function to start the scan for a XML-Tree
+def xml_startScan(parentNode, target):
+    verboseprint('SCAN', 'Initialize scan on ' + target)
+
+    if os.path.isdir(target):
+        xml_addFolder(parentNode, target)
+    else:
+        foldername = os.path.basename(os.path.normpath(os.path.dirname(target)))
+        foldernode = xml.Element('Directory', name=foldername)
+        parentNode.append(foldernode)
+
+        xml_addFile(foldernode, target)
+
+# recursive function to walk the folder and add the content to the xml-tree
+def xml_addFolder(parentNode, path):
+    foldername = os.path.basename(os.path.normpath(path))
+
+    verboseprint('READ', 'Directory\t' + foldername)
+
+    foldernode = xml.Element('Directory', name=foldername)
+    parentNode.append(foldernode)
+
+    for entry in os.listdir(path):
+        if not isMatching(settings.exclude, entry): # Check for a match with one of the exclude-regEx
+            entrypath = os.path.join(path, entry)
+
+            if os.path.isdir(entrypath):
+                xml_addFolder(foldernode, entrypath) # recursive call
+            else:
+                xml_addFile(foldernode, entrypath) # Add file
 
 # function to add a file to the tree
-def addFile(parentNode, path, name, verbose, link): 
-    file = os.path.join(path, name)
-    if verbose:
-        print '[READ ] File\t\t' + file
-    if not link:
-        child = xml.Element('File')
-        child.set('name', name)
-        child.set('sha1', hashfile(file))
-        child.set('size', str(os.path.getsize(file)))
-        parentNode.append(child)
-    else:
-        print 'retroshare://file?name=' + name + '&size=' + str(os.path.getsize(file)) + '&hash=' + hashfile(file)
+def xml_addFile(parentNode, file):
+    verboseprint('READ', 'File\t' + file)
+
+    path, name = os.path.split(file)
+    sha1 = hashfile(file)
+    size = str(os.path.getsize(file))
+
+    childNode = xml.Element('File')
+    childNode.set('name', name)
+    childNode.set('sha1', sha1)
+    childNode.set('size', size)
+    parentNode.append(childNode)
+
+def xml_writeToStdout(root):
+    tree = xml.ElementTree(root)
+    print xml.tostring(tree, pretty_print=True)
+
+def xml_writeToFile(root, file):
+    verboseprint('SAVE', 'File ' + settings.output)
+    tree = xml.ElementTree(root)
+    tree.write(file, pretty_print=True)
+
+#####################################################################################
+## Print Strings
+#####################################################################################
 
 # function to print the header with basic informations about this script
 def printHeader():
@@ -83,84 +150,83 @@ def printHeader():
 
 # function to print the usage and exit
 def printUsage():
-    printHeader()
     print 'Usage:'
     print '\trscGenerator.py [options] [folder]...'
     print ''
     print 'Options:'
-    print '  -e\t--exclude=REGEX\tExcludes files and folders matching the REGEX'
+    print '    -e\t--exclude=REGEX\tExcludes files and folders matching the REGEX'
     print '\t\t\t(By matching the name, not the full path)'
-    print '  -h\t--help\t\tShow this screen'
-    print '  -l\t--link\t\tPrints retroshare://-links to copy and paste'
-    print '  -o\t--output=FILE\tWrite the rsCollection into FILE.'
+    print '    -h\t--help\t\tShow this screen'
+    print '    -l\t--link\t\tPrints retroshare://-links to copy and paste'
+    print '    -o\t--output=FILE\tWrite the rsCollection into FILE.'
     print '\t\t\tIf not given, it will write into ./generated.rscollection' 
-    print '  -s\t--stdout\tPrint the XML-Tree to stdout. It overrides -o, so no file will be created.'
+    print '    -s\t--stdout\tPrint the XML-Tree to stdout. It overrides -o, so no file will be created.'
     print '\t\t\tIt also prevents any output except the XML-Tree.'
-    print '  -v\t--verbose\tShow what the Script is doing'
-    exit()
+    print '    -v\t--verbose\tShow what the Script is doing'
 
-# main-function
-def main():
-    if len(sys.argv) <= 1: # Not enough arguments
-        printUsage()
-    
-    # Set some defaults:
-    verbose = False
-    output  = 'generated.rsCollection'
-    exclude = []    
-    stdout  = False
-    quiet   = False
-    link    = False
-    
-    # Care for the arguments
-    argletters = 'hve:o:sql'
-    argwords   = ['help', 'exclude=', 'output=', 'verbose', 'stdout', 'quiet', 'link']
+
+
+#####################################################################################
+## Background support
+#####################################################################################
+
+def parseArguments():
+    argletters = 'hve:o:sl'
+    argwords     = ['help', 'exclude=', 'output=', 'verbose', 'stdout', 'link']
     triggers, targets = getopt.getopt(sys.argv[1:], argletters, argwords) 
-    if len(targets) is 0:
-        printUsage()
     
+    if len(targets) is 0:
+        printHeader()
+        printUsage()
+        exit()
+
     for trigger, value in triggers:
         if trigger in ['-h', '--help']:
+            printHeader()
             printUsage()
+            exit()
         elif trigger in ['-e', '--exclude']:
-            exclude.append(value)
+            settings.exclude.append(value)
         elif trigger in ['-o', '--output']:
-            output = value
+            settings.output = value
         elif trigger in ['-v', '--verbose']:
-            verbose = True
+            settings.verbose = True
         elif trigger in ['-s', '--stdout']:
-            stdout = True
-            quiet  = True
+            settings.stdout = True
+            settings.quiet  = True
         elif trigger in ['-l', '--link']:
-            quiet = True
-            link = True
-    
-    if quiet:
-        verbose = False
-    
-    if not quiet:
-        printHeader()
-    
-    # Create XML-tree
-    root = xml.XML('<!DOCTYPE RsCollection><RsCollection />')
-    for target in targets:
-        if os.path.isdir(target):
-            addFolder(root, target, verbose, link, exclude)
-        else:
-            path, name = os.path.split(target)
-            addFile(root, path, name, verbose, link)
-    
-    # Make it an ElementTree
-    tree = xml.ElementTree(root)
-    
-    # Print it or write it to a file
-    if stdout:
-        print ''
-        print xml.tostring(tree, pretty_print=True)
-    else:
-        if verbose:
-            print '[WRITE] File\t\t' + output
-        tree.write(output, pretty_print=True)
+            settings.quiet = True
+            settings.link  = True
+    return targets
 
-#call the main function
+# Verbose-helper
+def verboseprint(tag, string):
+    if settings.verbose and not settings.quiet:
+        print '[' + tag + ']\t' + string
+
+#####################################################################################
+## Main
+#####################################################################################
+
+def main():
+    # Care for the arguments
+    targets = parseArguments()
+    
+    if not settings.quiet:
+        printHeader()
+
+    root = xml.XML('<!DOCTYPE RsCollection><RsCollection />')
+
+    for target in targets:
+        if settings.link:
+            link_startScan(target)
+        else:
+            xml_startScan(root, target)
+
+    if not settings.link:
+        if settings.stdout:
+            xml_writeToStdout(root)
+        else:
+            xml_writeToFile(root, settings.output)
+
 main()
