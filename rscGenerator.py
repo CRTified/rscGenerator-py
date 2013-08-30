@@ -158,8 +158,8 @@ def printUsage():
     print '\t\t\t(By matching the name, not the full path)'
     print '    -h\t--help\t\tShow this screen'
     print '    -l\t--link\t\tPrints retroshare://-links to copy and paste'
-    print '    -o\t--output=FILE\tWrite the rsCollection into FILE.'
-    print '\t\t\tIf not given, it will write into ./generated.rscollection' 
+    print '    -o\t--output=FILE\tWrite the rsCollection into FILE and prints a retroshare://-link of the collection.'
+    print '\t\t\tIf not given, it will write into <Name of first folder>.rscollection' 
     print '    -s\t--stdout\tPrint the XML-Tree to stdout. It overrides -o, so no file will be created.'
     print '\t\t\tIt also prevents any output except the XML-Tree.'
     print '    -v\t--verbose\tShow what the Script is doing'
@@ -171,8 +171,8 @@ def printUsage():
 #####################################################################################
 
 def parseArguments():
-    argletters = 'hve:o:sl'
-    argwords     = ['help', 'exclude=', 'output=', 'verbose', 'stdout', 'link']
+    argletters = 'hve:o:slq'
+    argwords     = ['help', 'exclude=', 'output=', 'verbose', 'stdout', 'link', 'quiet']
     triggers, targets = getopt.getopt(sys.argv[1:], argletters, argwords) 
     
     if len(targets) is 0:
@@ -197,6 +197,8 @@ def parseArguments():
         elif trigger in ['-l', '--link']:
             settings.quiet = True
             settings.link  = True
+        elif trigger in ['-q', '--quiet']:
+            settings.quiet = True
     return targets
 
 # Verbose-helper
@@ -221,6 +223,8 @@ def main():
         if settings.link:
             link_startScan(target)
         else:
+            if settings.output is 'default':
+                settings.output = os.path.basename(os.path.normpath(target)) + '.rsCollection'
             xml_startScan(root, target)
 
     if not settings.link:
@@ -228,5 +232,6 @@ def main():
             xml_writeToStdout(root)
         else:
             xml_writeToFile(root, settings.output)
+            link_addFile(settings.output)
 
 main()

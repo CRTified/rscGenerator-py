@@ -1,6 +1,6 @@
 #!/usr/bin/python
 # Set some defaults:
-output  = 'generated.rsCollection'
+output  = 'default'
 exclude = [] 
 verbose = False
 stdout  = False
