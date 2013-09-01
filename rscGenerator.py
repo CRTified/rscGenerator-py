@@ -133,6 +133,22 @@ def xml_writeToFile(root, file):
     tree = xml.ElementTree(root)
     tree.write(file, pretty_print=True)
 
+def xml_locateOutput(name):
+    if settings.output is 'default' or settings.output is '':
+        settings.defaultdir = os.path.expanduser(settings.defaultdir)
+        if not os.path.exists(settings.defaultdir):
+            settings.defaultdir = '.'
+        settings.output = os.path.join(settings.defaultdir, name)
+        if not settings.overwrite and os.path.exists(settings.output + '.rsCollection'):
+            verboseprint('SAVE', 'Would overwrite ' + settings.output + '.rsCollection')
+            writeNumber = 1
+            while os.path.exists(settings.output + '-' + str(writeNumber) + '.rsCollection'):
+                verboseprint('SAVE', 'Would overwrite ' + settings.output + '-' + str(writeNumber) + '.rsCollection')
+                writeNumber += 1
+            settings.output = settings.output + '-' + str(writeNumber)
+    settings.output = settings.output + '.rsCollection'
+
+
 #####################################################################################
 ## Print Strings
 #####################################################################################
@@ -164,6 +180,7 @@ def printUsage():
     print '  -s\t--stdout\tPrint the XML-Tree to stdout. It overrides -o, so no file will be created.'
     print '\t\t\tIt also prevents any output except the XML-Tree.'
     print '  -v\t--verbose\tShow what the Script is doing.'
+    print '  -w\t--overwrite\tOverwrite the rsCollection if it already exists.'
 
 
 
@@ -172,8 +189,8 @@ def printUsage():
 #####################################################################################
 
 def parseArguments():
-    argletters = 'hve:o:slq'
-    argwords     = ['help', 'exclude=', 'output=', 'verbose', 'stdout', 'link', 'quiet']
+    argletters = 'hve:o:slqw'
+    argwords     = ['help', 'exclude=', 'output=', 'verbose', 'stdout', 'link', 'quiet', 'overwrite']
     triggers, targets = getopt.getopt(sys.argv[1:], argletters, argwords) 
     
     if len(targets) is 0:
@@ -200,6 +217,8 @@ def parseArguments():
             settings.link  = True
         elif trigger in ['-q', '--quiet']:
             settings.quiet = True
+        elif trigger in ['-w', '--overwrite']:
+            settings.overwrite = True
     return targets
 
 # Verbose-helper
@@ -220,21 +239,20 @@ def main():
 
     root = xml.XML('<!DOCTYPE RsCollection><RsCollection />')
 
+    name = ''
     for target in targets:
         if settings.link:
             link_startScan(target)
         else:
-            if settings.output is 'default' or settings.output is '':
-                settings.defaultdir = os.path.expanduser(settings.defaultdir)
-                if not os.path.exists(settings.defaultdir):
-                    settings.defaultdir = '.'
-                settings.output = os.path.join(settings.defaultdir, os.path.basename(os.path.normpath(target)) + '.rsCollection')
+            if name is '':
+                name = os.path.basename(os.path.normpath(target))
             xml_startScan(root, target)
 
     if not settings.link:
         if settings.stdout:
             xml_writeToStdout(root)
         else:
+            xml_locateOutput(name)
             xml_writeToFile(root, settings.output)
             print ''
             link_addFile(settings.output)
