@@ -224,8 +224,11 @@ def main():
         if settings.link:
             link_startScan(target)
         else:
-            if settings.output is 'default':
-                settings.output = os.path.basename(os.path.normpath(target)) + '.rsCollection'
+            if settings.output is 'default' or settings.output is '':
+                settings.defaultdir = os.path.expanduser(settings.defaultdir)
+                if not os.path.exists(settings.defaultdir):
+                    settings.defaultdir = '.'
+                settings.output = os.path.join(settings.defaultdir, os.path.basename(os.path.normpath(target)) + '.rsCollection')
             xml_startScan(root, target)
 
     if not settings.link:
