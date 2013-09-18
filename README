@@ -24,6 +24,11 @@ Options:
   -v	--verbose	Show what the Script is doing.
   -w	--overwrite	Overwrite the rsCollection if it already exists.
 
+Dependencies
+============
+
+- lxml (Installation instructions: http://lxml.de/installation.html)
+
 Missing Features?
 =================
 
