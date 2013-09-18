@@ -28,6 +28,7 @@ Dependencies
 ============
 
 - lxml (Installation instructions: http://lxml.de/installation.html)
+  (Raspberry Pi-User can install it with: sudo apt-get install python-lxml)
 
 Missing Features?
 =================
