@@ -124,29 +124,33 @@ def xml_addFile(parentNode, file):
     childNode.set('size', size)
     parentNode.append(childNode)
 
+# function to write the xml to stdout
 def xml_writeToStdout(root):
     tree = xml.ElementTree(root)
     print xml.tostring(tree, pretty_print=True)
 
+# function to write the xml to a file
 def xml_writeToFile(root, file):
     verboseprint('SAVE', 'File ' + settings.output)
     tree = xml.ElementTree(root)
     tree.write(file, pretty_print=True)
 
-def xml_locateOutput(name):
-    if settings.output is 'default' or settings.output is '':
-        settings.defaultdir = os.path.expanduser(settings.defaultdir)
-        if not os.path.exists(settings.defaultdir):
-            settings.defaultdir = '.'
-        settings.output = os.path.join(settings.defaultdir, name)
-        if not settings.overwrite and os.path.exists(settings.output + '.rsCollection'):
-            verboseprint('SAVE', 'Would overwrite ' + settings.output + '.rsCollection')
-            writeNumber = 1
-            while os.path.exists(settings.output + '-' + str(writeNumber) + '.rsCollection'):
-                verboseprint('SAVE', 'Would overwrite ' + settings.output + '-' + str(writeNumber) + '.rsCollection')
-                writeNumber += 1
-            settings.output = settings.output + '-' + str(writeNumber)
-    settings.output = settings.output + '.rsCollection'
+
+# function to handle the save-process
+def save(root, target):
+    if settings.stdout: # if it should write to stdout
+        xml_writeToStdout(root)
+    else: # if it should write to a file
+        if settings.output is 'default':
+            settings.output_t = os.path.basename(os.path.normpath(target)) + '.rsCollection'
+        else:
+            settings.output_t = os.path.join(settings.output, os.path.basename(os.path.normpath(target)) + '.rsCollection')
+
+        xml_writeToFile(root, settings.output_t)
+        print ''
+        link_addFile(settings.output_t)
+        print ''
+
 
 
 #####################################################################################
@@ -175,12 +179,11 @@ def printUsage():
     print '  -h\t--help\t\tShow this screen.'
     print '  -l\t--link\t\tPrints retroshare://-links to copy and paste.'
     print '  -o\t--output=FILE\tWrite the rsCollection into FILE and prints a retroshare://-link of the collection.'
-    print '\t\t\tIf not given, it will write into <Name of first folder>.rscollection.' 
+    print '\t\t\tIf not given, it will write into <Name of folder>.rscollection.' 
     print '  -q\t--quiet\t\tPrevents any output except -s, -l or the link to a new rsCollection file.'
     print '  -s\t--stdout\tPrint the XML-Tree to stdout. It overrides -o, so no file will be created.'
     print '\t\t\tIt also prevents any output except the XML-Tree.'
     print '  -v\t--verbose\tShow what the Script is doing.'
-    print '  -w\t--overwrite\tOverwrite the rsCollection if it already exists.'
 
 
 
@@ -189,8 +192,8 @@ def printUsage():
 #####################################################################################
 
 def parseArguments():
-    argletters = 'hve:o:slqw'
-    argwords     = ['help', 'exclude=', 'output=', 'verbose', 'stdout', 'link', 'quiet', 'overwrite']
+    argletters = 'hve:o:slqm'
+    argwords     = ['help', 'exclude=', 'output=', 'verbose', 'stdout', 'link', 'quiet', 'merge']
     triggers, targets = getopt.getopt(sys.argv[1:], argletters, argwords) 
     
     if len(targets) is 0:
@@ -217,8 +220,8 @@ def parseArguments():
             settings.link  = True
         elif trigger in ['-q', '--quiet']:
             settings.quiet = True
-        elif trigger in ['-w', '--overwrite']:
-            settings.overwrite = True
+        elif trigger in ['-m', '--merge']:
+            settings.merge = True
     return targets
 
 # Verbose-helper
@@ -237,25 +240,22 @@ def main():
     if not settings.quiet:
         printHeader()
 
-    root = xml.XML('<!DOCTYPE RsCollection><RsCollection />')
+    if settings.merge:
+        root = xml.XML('<!DOCTYPE RsCollection><RsCollection />')
 
-    name = ''
     for target in targets:
+        if not settings.merge:
+            root = xml.XML('<!DOCTYPE RsCollection><RsCollection />')
+
         if settings.link:
             link_startScan(target)
         else:
-            if name is '':
-                name = os.path.basename(os.path.normpath(target))
             xml_startScan(root, target)
 
-    if not settings.link:
-        if settings.stdout:
-            xml_writeToStdout(root)
-        else:
-            xml_locateOutput(name)
-            xml_writeToFile(root, settings.output)
-            print ''
-            link_addFile(settings.output)
-            print ''
+            if not settings.merge:
+                save(root, target)
+
+    if settings.merge:
+        save(root, target) # Maybe a bit dirty, because target is only inside of the loop.
 
 main()
