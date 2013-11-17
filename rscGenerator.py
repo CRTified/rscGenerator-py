@@ -135,16 +135,27 @@ def xml_writeToFile(root, file):
     tree = xml.ElementTree(root)
     tree.write(file, pretty_print=True)
 
+# function to generate the path where to save the file (can prevent overwriting)
+def getSaveFile(base):
+    if not settings.overwrite and os.path.exists(base + '.rsCollection'):
+        verboseprint('SAVE', 'Would overwrite ' + base + '.rsCollection')
+        writeNumber = 1
+        while os.path.exists(base + '-' + str(writeNumber) + '.rsCollection'):
+            verboseprint('SAVE', 'Would overwrite ' + base + '-' + str(writeNumber) + '.rsCollection')
+            writeNumber += 1
+        base = base + '-' + str(writeNumber)
+    return base + '.rsCollection'
 
 # function to handle the save-process
 def save(root, target):
     if settings.stdout: # if it should write to stdout
         xml_writeToStdout(root)
     else: # if it should write to a file
+
         if settings.output is 'default':
-            settings.output_t = os.path.basename(os.path.normpath(target)) + '.rsCollection'
+            settings.output_t = getSaveFile(os.path.basename(os.path.normpath(target)))
         else:
-            settings.output_t = os.path.join(settings.output, os.path.basename(os.path.normpath(target)) + '.rsCollection')
+            settings.output_t = getSaveFile(os.path.join(settings.output, os.path.basename(os.path.normpath(target))))
 
         xml_writeToFile(root, settings.output_t)
         print ''
@@ -178,12 +189,16 @@ def printUsage():
     print '\t\t\t(By matching the name, not the full path).'
     print '  -h\t--help\t\tShow this screen.'
     print '  -l\t--link\t\tPrints retroshare://-links to copy and paste.'
+    print '  -m\t--merge\t\tMerges all targets to one rsCollection.'
+    print '  -o\t--output=FILE\tWrite the rsCollection into FILE and prints a retroshare://-link of the collection.'
+    print '\t\t\tIf not given, it will write into <Name of folder>.rscollection.' 
     print '  -o\t--output=FILE\tWrite the rsCollection into FILE and prints a retroshare://-link of the collection.'
     print '\t\t\tIf not given, it will write into <Name of folder>.rscollection.' 
     print '  -q\t--quiet\t\tPrevents any output except -s, -l or the link to a new rsCollection file.'
     print '  -s\t--stdout\tPrint the XML-Tree to stdout. It overrides -o, so no file will be created.'
     print '\t\t\tIt also prevents any output except the XML-Tree.'
     print '  -v\t--verbose\tShow what the Script is doing.'
+    print '  -w\t--overwrite\tOverwrites rsCollections if the file already exists.'
 
 
 
@@ -192,8 +207,8 @@ def printUsage():
 #####################################################################################
 
 def parseArguments():
-    argletters = 'hve:o:slqm'
-    argwords     = ['help', 'exclude=', 'output=', 'verbose', 'stdout', 'link', 'quiet', 'merge']
+    argletters = 'hve:o:slqmw'
+    argwords     = ['help', 'exclude=', 'output=', 'verbose', 'stdout', 'link', 'quiet', 'merge', 'overwrite']
     triggers, targets = getopt.getopt(sys.argv[1:], argletters, argwords) 
     
     if len(targets) is 0:
@@ -222,6 +237,8 @@ def parseArguments():
             settings.quiet = True
         elif trigger in ['-m', '--merge']:
             settings.merge = True
+        elif trigger in ['-w', '--overwrite']:
+            settings.overwrite = True
     return targets
 
 # Verbose-helper
