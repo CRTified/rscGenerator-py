@@ -16,13 +16,17 @@ Options:
 			(By matching the name, not the full path).
   -h	--help		Show this screen.
   -l	--link		Prints retroshare://-links to copy and paste.
+  -m	--merge		Merges all targets to one rsCollection.
   -o	--output=FILE	Write the rsCollection into FILE and prints a retroshare://-link of the collection.
-			If not given, it will write into <Name of first folder>.rscollection.
+			If not given, it will write into <Name of folder>.rscollection.
+  -o	--output=FILE	Write the rsCollection into FILE and prints a retroshare://-link of the collection.
+			If not given, it will write into <Name of folder>.rscollection.
   -q	--quiet		Prevents any output except -s, -l or the link to a new rsCollection file.
   -s	--stdout	Print the XML-Tree to stdout. It overrides -o, so no file will be created.
 			It also prevents any output except the XML-Tree.
   -v	--verbose	Show what the Script is doing.
-  -w	--overwrite	Overwrite the rsCollection if it already exists.
+  -w	--overwrite	Overwrites rsCollections if the file already exists.
+
 
 Dependencies
 ============
