@@ -137,14 +137,14 @@ def xml_writeToFile(root, file):
 
 # function to generate the path where to save the file (can prevent overwriting)
 def getSaveFile(base):
-    if not settings.overwrite and os.path.exists(base + '.rsCollection'):
-        verboseprint('SAVE', 'Would overwrite ' + base + '.rsCollection')
+    if not settings.overwrite and os.path.exists(base + '.rscollection'):
+        verboseprint('SAVE', 'Would overwrite ' + base + '.rscollection')
         writeNumber = 1
-        while os.path.exists(base + '-' + str(writeNumber) + '.rsCollection'):
-            verboseprint('SAVE', 'Would overwrite ' + base + '-' + str(writeNumber) + '.rsCollection')
+        while os.path.exists(base + '-' + str(writeNumber) + '.rscollection'):
+            verboseprint('SAVE', 'Would overwrite ' + base + '-' + str(writeNumber) + '.rscollection')
             writeNumber += 1
         base = base + '-' + str(writeNumber)
-    return base + '.rsCollection'
+    return base + '.rscollection'
 
 # function to handle the save-process
 def save(root, target):
