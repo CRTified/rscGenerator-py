@@ -16,6 +16,7 @@
 #
 
 # imports
+import string
 import sys
 import os
 import getopt
@@ -94,7 +95,7 @@ def xml_startScan(parentNode, target):
 
 # recursive function to walk the folder and add the content to the xml-tree
 def xml_addFolder(parentNode, path):
-    foldername = unicode(os.path.basename(os.path.normpath(path)), encoding='utf-8')
+    foldername = unicode(cleanFilename(os.path.basename(os.path.normpath(path))), encoding='utf-8')
 
     verboseprint('READ', 'Directory\t' + foldername)
 
@@ -117,9 +118,8 @@ def xml_addFile(parentNode, file):
     path, name = os.path.split(file)
     sha1 = hashfile(file)
     size = str(os.path.getsize(file))
-
     childNode = xml.Element('File')
-    childNode.set('name', unicode(name, encoding='utf-8'))
+    childNode.set('name', unicode(cleanFilename(name), encoding='utf-8'))
     childNode.set('sha1', sha1)
     childNode.set('size', size)
     parentNode.append(childNode)
@@ -192,8 +192,6 @@ def printUsage():
     print '  -m\t--merge\t\tMerges all targets to one rsCollection.'
     print '  -o\t--output=FILE\tWrite the rsCollection into FILE and prints a retroshare://-link of the collection.'
     print '\t\t\tIf not given, it will write into <Name of folder>.rscollection.' 
-    print '  -o\t--output=FILE\tWrite the rsCollection into FILE and prints a retroshare://-link of the collection.'
-    print '\t\t\tIf not given, it will write into <Name of folder>.rscollection.' 
     print '  -q\t--quiet\t\tPrevents any output except -s, -l or the link to a new rsCollection file.'
     print '  -s\t--stdout\tPrint the XML-Tree to stdout. It overrides -o, so no file will be created.'
     print '\t\t\tIt also prevents any output except the XML-Tree.'
@@ -205,6 +203,13 @@ def printUsage():
 #####################################################################################
 ## Background support
 #####################################################################################
+
+def cleanFilename(filename):
+    badChars = ' ,&<>*?|\":\'()'
+    mapTo    = ''
+    for i in range(0, len(badChars)):
+        mapTo += '_'
+    return filename.translate(string.maketrans(badChars, mapTo))
 
 def parseArguments():
     argletters = 'hve:o:slqmw'
