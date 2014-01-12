@@ -205,7 +205,7 @@ def printUsage():
 #####################################################################################
 
 def cleanFilename(filename):
-    badChars = ' ,&<>*?|\":\'()'
+    badChars = settings.badChars
     mapTo    = ''
     for i in range(0, len(badChars)):
         mapTo += '_'
