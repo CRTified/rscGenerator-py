@@ -1,19 +1,28 @@
 #!/usr/bin/python
 # 
+# License
+# =========
+#
+# Copyright (C) 2013 Richard Schneider <carti@gmx.de>
+# This work is free. You can redistribute it and/or modify it under the
+# terms of the Do What The Fuck You Want To Public License, Version 2,
+# as published by Sam Hocevar. See the COPYING file for more details.
+#
+#
 #            DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
 #                    Version 2, December 2004
 #
-# Copyright (C) 2013 Richard Schneider
+# Copyright (C) 2004 Sam Hocevar <sam@hocevar.net>
 #
 # Everyone is permitted to copy and distribute verbatim or modified
 # copies of this license document, and changing it is allowed as long
 # as the name is changed.
 #
 #            DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
-#     TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
-#     
-#    0. You just DO WHAT THE FUCK YOU WANT TO.
+#   TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
 #
+#  0. You just DO WHAT THE FUCK YOU WANT TO.
+
 
 # imports
 import string
@@ -25,7 +34,7 @@ import lxml.etree as xml
 import re
 import settings
 
-# function to calculate the sha1 of a file
+# Function to calculate the sha1 of a file
 def hashfile(filepath):
     verboseprint('CALC', 'Hash of ' + filepath)
     sha1 = hashlib.sha1()
@@ -37,7 +46,7 @@ def hashfile(filepath):
         f.close()
     return sha1.hexdigest()
 
-# function to check whether the list of expressions creates a match
+# Function to check whether the list of expressions creates a match
 def isMatching(expressions, target):
     for expression in expressions:
         if re.match(expression, target):
@@ -265,7 +274,10 @@ def main():
     if settings.merge:
         root = xml.XML('<!DOCTYPE RsCollection><RsCollection />')
 
+    lastTarget = '';
     for target in targets:
+        target = os.path.realpath(target)
+        lastTarget = target; # Overwrite lastTarget with the current target to save the last Target while respecting the variable-scope
         if not settings.merge:
             root = xml.XML('<!DOCTYPE RsCollection><RsCollection />')
 
@@ -278,6 +290,6 @@ def main():
                 save(root, target)
 
     if settings.merge:
-        save(root, target) # Maybe a bit dirty, because target is only inside of the loop.
+        save(root, lastTarget)
 
 main()
