@@ -146,7 +146,6 @@ def xml_writeToFile(root, file):
 
 # function to generate the path where to save the file (can prevent overwriting)
 def getSaveFile(base):
-     # Keeps the rscollection-Names clean, too
     if not settings.overwrite and os.path.exists(base + '.rscollection'):
         verboseprint('SAVE', 'Would overwrite ' + base + '.rscollection')
         writeNumber = 1
@@ -154,7 +153,7 @@ def getSaveFile(base):
             verboseprint('SAVE', 'Would overwrite ' + base + '-' + str(writeNumber) + '.rscollection')
             writeNumber += 1
         base = base + '-' + str(writeNumber)
-    return cleanFilename(base) + '.rscollection'
+    return cleanFilename(base) + '.rscollection' # Keeps the rscollection-Names clean, too
 
 # function to handle the save-process
 def save(root, target):
